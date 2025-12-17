@@ -1,148 +1,258 @@
 -- GGH Anti-Cheat System v1.0 (Легальная версия)
 -- Работает в рамках правил Roblox
+-- GUI поверх всех интерфейсов
 
 -- Инициализация сервисов
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
 
--- GUI Создание
+-- Оповещение о загрузке
+StarterGui:SetCore("SendNotification", {
+    Title = "GGH Anti-Cheat",
+    Text = "Система загружена! Нажмите K",
+    Duration = 3,
+    Icon = "rbxassetid://4483345998"
+})
+
+-- GUI Создание - НА САМЫЙ ВЕРХНИЙ СЛОЙ
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "GGH_AntiCheat_UI"
+ScreenGui.DisplayOrder = 999999 -- Максимальный приоритет
+ScreenGui.IgnoreGuiInset = true -- Игнорировать безопасные зоны
+ScreenGui.ResetOnSpawn = false -- Не сбрасывать при респавне
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling -- Поведение ZIndex
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 -- Основной фрейм
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 400, 0, 600)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -300)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 25, 35)
+MainFrame.Size = UDim2.new(0, 420, 0, 650)
+MainFrame.Position = UDim2.new(0.5, -210, 0.5, -325)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
+MainFrame.BackgroundTransparency = 0.05 -- Полупрозрачный фон
 MainFrame.BorderSizePixel = 0
 MainFrame.Visible = false
+MainFrame.ZIndex = 100
 MainFrame.Parent = ScreenGui
+
+-- Эффект размытия фона
+local BlurEffect = Instance.new("BlurEffect")
+BlurEffect.Size = 0 -- Начальное значение
+BlurEffect.Parent = game:GetService("Lighting")
 
 -- Закругленные углы
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 15)
+UICorner.CornerRadius = UDim.new(0, 18)
 UICorner.Parent = MainFrame
 
--- Тень
+-- Стильная рамка с градиентом
 local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromRGB(60, 70, 90)
+UIStroke.Color = Color3.fromRGB(80, 120, 220)
 UIStroke.Thickness = 2
+UIStroke.Transparency = 0.3
+UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 UIStroke.Parent = MainFrame
+
+-- Эффект свечения
+local UIGradient = Instance.new("UIGradient")
+UIGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 120, 220)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 70, 150))
+})
+UIGradient.Rotation = 45
+UIGradient.Enabled = false
+UIGradient.Parent = UIStroke
 
 -- Заголовок
 local Title = Instance.new("TextLabel")
-Title.Text = "🔒 GGH Anti-Cheat System"
-Title.Size = UDim2.new(1, 0, 0, 60)
-Title.BackgroundColor3 = Color3.fromRGB(30, 35, 50)
+Title.Text = "🔒 GGH ANTI-CHEAT SYSTEM"
+Title.Size = UDim2.new(1, 0, 0, 70)
+Title.BackgroundColor3 = Color3.fromRGB(25, 30, 45)
+Title.BackgroundTransparency = 0.1
 Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 22
+Title.Font = Enum.Font.GothamBlack
+Title.TextSize = 24
+Title.TextStrokeTransparency = 0.8
+Title.TextStrokeColor3 = Color3.fromRGB(80, 120, 220)
+Title.ZIndex = 101
 Title.Parent = MainFrame
 
 local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 15)
+TitleCorner.CornerRadius = UDim.new(0, 18)
 TitleCorner.Parent = Title
+
+-- Градиент для заголовка
+local TitleGradient = Instance.new("UIGradient")
+TitleGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 90, 180)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 60, 140))
+})
+TitleGradient.Rotation = 90
+TitleGradient.Parent = Title
 
 -- Подзаголовок
 local Subtitle = Instance.new("TextLabel")
-Subtitle.Text = "Легальная система обнаружения читеров"
-Subtitle.Size = UDim2.new(1, 0, 0, 30)
-Subtitle.Position = UDim2.new(0, 0, 0.1, 0)
+Subtitle.Text = "Легальная система обнаружения и анализа чита"
+Subtitle.Size = UDim2.new(1, 0, 0, 35)
+Subtitle.Position = UDim2.new(0, 0, 0.108, 0)
 Subtitle.BackgroundTransparency = 1
-Subtitle.TextColor3 = Color3.fromRGB(180, 180, 220)
+Subtitle.TextColor3 = Color3.fromRGB(180, 200, 255)
 Subtitle.Font = Enum.Font.Gotham
 Subtitle.TextSize = 14
+Subtitle.TextTransparency = 0.2
+Subtitle.ZIndex = 101
 Subtitle.Parent = MainFrame
 
--- Кнопка открытия/закрытия по K
+-- Закрытие меню по ESC
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.K then
-        MainFrame.Visible = not MainFrame.Visible
+    if not gameProcessed then
+        if input.KeyCode == Enum.KeyCode.K then
+            MainFrame.Visible = not MainFrame.Visible
+            if MainFrame.Visible then
+                -- Плавное появление
+                MainFrame.BackgroundTransparency = 1
+                BlurEffect.Size = 0
+                for i = 1, 0, -0.05 do
+                    MainFrame.BackgroundTransparency = i
+                    BlurEffect.Size = (1-i) * 15
+                    task.wait(0.01)
+                end
+                -- Включаем градиент
+                UIGradient.Enabled = true
+            else
+                -- Плавное исчезновение
+                UIGradient.Enabled = false
+                for i = 0, 1, 0.05 do
+                    MainFrame.BackgroundTransparency = i
+                    BlurEffect.Size = (1-i) * 15
+                    task.wait(0.01)
+                end
+                BlurEffect.Size = 0
+            end
+        elseif input.KeyCode == Enum.KeyCode.Escape and MainFrame.Visible then
+            MainFrame.Visible = false
+            UIGradient.Enabled = false
+            BlurEffect.Size = 0
+        end
+    end
+end)
+
+-- Перемещение GUI
+local isDragging = false
+local dragStart
+local startPos
+
+Title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+    end
+end)
+
+Title.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
 -- Таблица для хранения данных о читерах
-local CheaterDatabase = {
-    -- Пример: ["ИмяИгрока"] = {reason = "причина", confidence = 0.95}
-}
+local CheaterDatabase = {}
 
 -- Секция статистики
 local StatsFrame = Instance.new("Frame")
-StatsFrame.Size = UDim2.new(0.9, 0, 0, 100)
-StatsFrame.Position = UDim2.new(0.05, 0, 0.15, 0)
-StatsFrame.BackgroundColor3 = Color3.fromRGB(35, 40, 55)
+StatsFrame.Size = UDim2.new(0.9, 0, 0, 120)
+StatsFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
+StatsFrame.BackgroundColor3 = Color3.fromRGB(30, 35, 50)
+StatsFrame.BackgroundTransparency = 0.1
+StatsFrame.ZIndex = 101
 StatsFrame.Parent = MainFrame
 
 local StatsCorner = Instance.new("UICorner")
-StatsCorner.CornerRadius = UDim.new(0, 10)
+StatsCorner.CornerRadius = UDim.new(0, 12)
 StatsCorner.Parent = StatsFrame
 
 local StatsTitle = Instance.new("TextLabel")
-StatsTitle.Text = "📊 Статистика сервера"
-StatsTitle.Size = UDim2.new(1, 0, 0, 30)
+StatsTitle.Text = "📊 СТАТИСТИКА СЕРВЕРА"
+StatsTitle.Size = UDim2.new(1, 0, 0, 40)
 StatsTitle.BackgroundTransparency = 1
 StatsTitle.TextColor3 = Color3.new(1, 1, 1)
 StatsTitle.Font = Enum.Font.GothamBold
-StatsTitle.TextSize = 16
+StatsTitle.TextSize = 18
+StatsTitle.ZIndex = 102
 StatsTitle.Parent = StatsFrame
 
 local TotalPlayersLabel = Instance.new("TextLabel")
-TotalPlayersLabel.Text = "Игроков онлайн: " .. #Players:GetPlayers()
-TotalPlayersLabel.Size = UDim2.new(1, 0, 0, 20)
-TotalPlayersLabel.Position = UDim2.new(0, 0, 0.3, 0)
+TotalPlayersLabel.Text = "🎮 Игроков онлайн: " .. #Players:GetPlayers()
+TotalPlayersLabel.Size = UDim2.new(1, 0, 0, 25)
+TotalPlayersLabel.Position = UDim2.new(0, 0, 0.33, 0)
 TotalPlayersLabel.BackgroundTransparency = 1
-TotalPlayersLabel.TextColor3 = Color3.fromRGB(200, 200, 220)
+TotalPlayersLabel.TextColor3 = Color3.fromRGB(200, 220, 255)
 TotalPlayersLabel.Font = Enum.Font.Gotham
-TotalPlayersLabel.TextSize = 14
+TotalPlayersLabel.TextSize = 16
+TotalPlayersLabel.ZIndex = 102
 TotalPlayersLabel.Parent = StatsFrame
 
 local SuspectsLabel = Instance.new("TextLabel")
-SuspectsLabel.Text = "Подозрительных: 0"
-SuspectsLabel.Size = UDim2.new(1, 0, 0, 20)
-SuspectsLabel.Position = UDim2.new(0, 0, 0.5, 0)
+SuspectsLabel.Text = "⚠️ Подозрительных: 0"
+SuspectsLabel.Size = UDim2.new(1, 0, 0, 25)
+SuspectsLabel.Position = UDim2.new(0, 0, 0.66, 0)
 SuspectsLabel.BackgroundTransparency = 1
 SuspectsLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
 SuspectsLabel.Font = Enum.Font.Gotham
-SuspectsLabel.TextSize = 14
+SuspectsLabel.TextSize = 16
+SuspectsLabel.ZIndex = 102
 SuspectsLabel.Parent = StatsFrame
 
 -- Список проверенных игроков
 local PlayersListFrame = Instance.new("Frame")
-PlayersListFrame.Size = UDim2.new(0.9, 0, 0, 300)
-PlayersListFrame.Position = UDim2.new(0.05, 0, 0.35, 0)
-PlayersListFrame.BackgroundColor3 = Color3.fromRGB(35, 40, 55)
+PlayersListFrame.Size = UDim2.new(0.9, 0, 0, 320)
+PlayersListFrame.Position = UDim2.new(0.05, 0, 0.42, 0)
+PlayersListFrame.BackgroundColor3 = Color3.fromRGB(30, 35, 50)
+PlayersListFrame.BackgroundTransparency = 0.1
+PlayersListFrame.ZIndex = 101
 PlayersListFrame.Parent = MainFrame
 
 local PlayersListCorner = Instance.new("UICorner")
-PlayersListCorner.CornerRadius = UDim.new(0, 10)
+PlayersListCorner.CornerRadius = UDim.new(0, 12)
 PlayersListCorner.Parent = PlayersListFrame
 
 local PlayersListTitle = Instance.new("TextLabel")
-PlayersListTitle.Text = "👥 Проверенные игроки"
-PlayersListTitle.Size = UDim2.new(1, 0, 0, 30)
+PlayersListTitle.Text = "👥 АКТИВНЫЕ ИГРОКИ"
+PlayersListTitle.Size = UDim2.new(1, 0, 0, 40)
 PlayersListTitle.BackgroundTransparency = 1
 PlayersListTitle.TextColor3 = Color3.new(1, 1, 1)
 PlayersListTitle.Font = Enum.Font.GothamBold
-PlayersListTitle.TextSize = 16
+PlayersListTitle.TextSize = 18
+PlayersListTitle.ZIndex = 102
 PlayersListTitle.Parent = PlayersListFrame
 
 local PlayersScrollingFrame = Instance.new("ScrollingFrame")
-PlayersScrollingFrame.Size = UDim2.new(1, -20, 1, -40)
-PlayersScrollingFrame.Position = UDim2.new(0, 10, 0, 35)
+PlayersScrollingFrame.Size = UDim2.new(1, -20, 1, -50)
+PlayersScrollingFrame.Position = UDim2.new(0, 10, 0, 45)
 PlayersScrollingFrame.BackgroundTransparency = 1
 PlayersScrollingFrame.BorderSizePixel = 0
 PlayersScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+PlayersScrollingFrame.ScrollBarThickness = 6
+PlayersScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 100, 180)
+PlayersScrollingFrame.ZIndex = 102
 PlayersScrollingFrame.Parent = PlayersListFrame
 
 -- Функции легального анти-чита
-
--- 1. Проверка на нереальную скорость
 local function checkUnrealisticSpeed(player)
     if not player.Character then return false end
     
@@ -150,20 +260,17 @@ local function checkUnrealisticSpeed(player)
     local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
     
     if humanoid and humanoidRootPart then
-        -- Логируем скорость (только для информации)
         local velocity = humanoidRootPart.Velocity
         local speed = velocity.Magnitude
         
-        -- Физические пределы скорости в Roblox
-        if speed > 500 then -- Очень высокая скорость
-            return {isCheating = true, reason = "Нереальная скорость: " .. math.floor(speed) .. " studs/s", confidence = 0.8}
+        if speed > 500 then
+            return {isCheating = true, reason = "Нереальная скорость", confidence = 0.8}
         end
     end
     
-    return {isCheating = false, reason = "Скорость в норме", confidence = 0.1}
+    return {isCheating = false, reason = "Норма", confidence = 0.1}
 end
 
--- 2. Проверка на левитацию (незаконный полет)
 local function checkIllegalFlying(player)
     if not player.Character then return false end
     
@@ -171,247 +278,279 @@ local function checkIllegalFlying(player)
     local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
     
     if humanoid and humanoidRootPart then
-        -- Проверка: игрок в воздухе без гравитации
         local seat = humanoid.SeatPart
         local hasSeat = seat ~= nil
         
-        -- Если игрок в воздухе без сидения и имеет необычную высоту
         if not hasSeat and humanoidRootPart.Position.Y > 1000 then
-            return {isCheating = true, reason = "Незаконный полет на высоте " .. math.floor(humanoidRootPart.Position.Y), confidence = 0.9}
+            return {isCheating = true, reason = "Незаконный полет", confidence = 0.9}
         end
     end
     
-    return {isCheating = false, reason = "Полет легальный", confidence = 0.1}
+    return {isCheating = false, reason = "Норма", confidence = 0.1}
 end
 
--- 3. Проверка на телепортацию
-local function checkTeleportation(player, lastPosition)
-    if not player.Character then return lastPosition, false end
-    
-    local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return lastPosition, false end
-    
-    local currentPosition = humanoidRootPart.Position
-    
-    if lastPosition then
-        local distance = (currentPosition - lastPosition).Magnitude
-        
-        -- Если игрок переместился на огромное расстояние за 1 кадр
-        if distance > 500 then -- Физически невозможное перемещение
-            return currentPosition, {isCheating = true, reason = "Телепортация: " .. math.floor(distance) .. " studs за кадр", confidence = 0.95}
-        end
-    end
-    
-    return currentPosition, {isCheating = false, reason = "Перемещение легальное", confidence = 0.1}
-end
-
--- 4. Проверка на Noclip
-local function checkNoclip(player)
+local playerLastPositions = {}
+local function checkTeleportation(player)
     if not player.Character then return false end
     
-    local parts = player.Character:GetChildren()
-    local clippingParts = 0
-    local totalParts = 0
+    local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
     
-    for _, part in ipairs(parts) do
-        if part:IsA("BasePart") and part.CanCollide == false then
-            clippingParts = clippingParts + 1
-        end
-        if part:IsA("BasePart") then
-            totalParts = totalParts + 1
+    local currentPosition = humanoidRootPart.Position
+    local lastPos = playerLastPositions[player]
+    
+    if lastPos then
+        local distance = (currentPosition - lastPos).Magnitude
+        
+        if distance > 500 then
+            return {isCheating = true, reason = "Телепортация", confidence = 0.95}
         end
     end
     
-    -- Если у игрока все части не коллайдерные
-    if totalParts > 0 and clippingParts == totalParts then
-        return {isCheating = true, reason = "Noclip активирован", confidence = 0.85}
-    end
-    
-    return {isCheating = false, reason = "Коллизии в норме", confidence = 0.1}
+    playerLastPositions[player] = currentPosition
+    return {isCheating = false, reason = "Норма", confidence = 0.1}
 end
 
 -- Функция для создания элемента списка игроков
 local function createPlayerListItem(player, index)
     local itemFrame = Instance.new("Frame")
-    itemFrame.Size = UDim2.new(1, -10, 0, 60)
-    itemFrame.Position = UDim2.new(0, 5, 0, (index-1)*65)
-    itemFrame.BackgroundColor3 = Color3.fromRGB(45, 50, 65)
+    itemFrame.Size = UDim2.new(1, -10, 0, 70)
+    itemFrame.Position = UDim2.new(0, 5, 0, (index-1)*75)
+    itemFrame.BackgroundColor3 = Color3.fromRGB(40, 45, 65)
+    itemFrame.BackgroundTransparency = 0.1
+    itemFrame.ZIndex = 103
     itemFrame.BorderSizePixel = 0
     
     local itemCorner = Instance.new("UICorner")
-    itemCorner.CornerRadius = UDim.new(0, 8)
+    itemCorner.CornerRadius = UDim.new(0, 10)
     itemCorner.Parent = itemFrame
     
+    -- Аватар игрока
+    local avatar = Instance.new("ImageLabel")
+    avatar.Size = UDim2.new(0, 50, 0, 50)
+    avatar.Position = UDim2.new(0.02, 0, 0.15, 0)
+    avatar.BackgroundColor3 = Color3.fromRGB(60, 70, 90)
+    avatar.ZIndex = 104
+    avatar.Parent = itemFrame
+    
+    local avatarCorner = Instance.new("UICorner")
+    avatarCorner.CornerRadius = UDim.new(0, 25)
+    avatarCorner.Parent = avatar
+    
+    -- Имя игрока
     local playerName = Instance.new("TextLabel")
     playerName.Text = player.Name
-    playerName.Size = UDim2.new(0.7, 0, 0.5, 0)
-    playerName.Position = UDim2.new(0.05, 0, 0, 0)
+    playerName.Size = UDim2.new(0.6, 0, 0.4, 0)
+    playerName.Position = UDim2.new(0.18, 0, 0, 0)
     playerName.BackgroundTransparency = 1
     playerName.TextColor3 = Color3.new(1, 1, 1)
-    playerName.Font = Enum.Font.Gotham
+    playerName.Font = Enum.Font.GothamBold
     playerName.TextSize = 16
     playerName.TextXAlignment = Enum.TextXAlignment.Left
+    playerName.ZIndex = 104
     playerName.Parent = itemFrame
     
     local statusLabel = Instance.new("TextLabel")
-    statusLabel.Text = "✅ Проверяется..."
-    statusLabel.Size = UDim2.new(0.9, 0, 0.5, 0)
-    statusLabel.Position = UDim2.new(0.05, 0, 0.5, 0)
+    statusLabel.Text = "🔍 Анализ..."
+    statusLabel.Size = UDim2.new(0.6, 0, 0.4, 0)
+    statusLabel.Position = UDim2.new(0.18, 0, 0.4, 0)
     statusLabel.BackgroundTransparency = 1
-    statusLabel.TextColor3 = Color3.fromRGB(180, 180, 220)
+    statusLabel.TextColor3 = Color3.fromRGB(180, 200, 255)
     statusLabel.Font = Enum.Font.Gotham
-    statusLabel.TextSize = 12
+    statusLabel.TextSize = 13
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.ZIndex = 104
     statusLabel.Parent = itemFrame
     
-    -- Кнопка "Пожаловаться" (официальная функция)
-    local reportButton = Instance.new("TextButton")
-    reportButton.Text = "📋 Пожаловаться"
-    reportButton.Size = UDim2.new(0.25, 0, 0.7, 0)
-    reportButton.Position = UDim2.new(0.72, 0, 0.15, 0)
-    reportButton.BackgroundColor3 = Color3.fromRGB(60, 70, 90)
-    reportButton.TextColor3 = Color3.new(1, 1, 1)
-    reportButton.Font = Enum.Font.Gotham
-    reportButton.TextSize = 12
-    reportButton.Parent = itemFrame
+    -- Кнопка действия
+    local actionButton = Instance.new("TextButton")
+    actionButton.Text = "📋 Отчёт"
+    actionButton.Size = UDim2.new(0.25, 0, 0.7, 0)
+    actionButton.Position = UDim2.new(0.72, 0, 0.15, 0)
+    actionButton.BackgroundColor3 = Color3.fromRGB(60, 80, 160)
+    actionButton.TextColor3 = Color3.new(1, 1, 1)
+    actionButton.Font = Enum.Font.GothamBold
+    actionButton.TextSize = 12
+    actionButton.ZIndex = 104
+    actionButton.Parent = itemFrame
     
     local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 6)
-    buttonCorner.Parent = reportButton
+    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.Parent = actionButton
     
-    reportButton.MouseButton1Click:Connect(function()
-        -- Легальный способ: предложить пожаловаться через официальную систему
-        local message = string.format("Игрок %s возможный читер. Скорость проверена.", player.Name)
-        warn("Рекомендация: Используйте официальную систему жалоб Roblox для игрока:", player.Name)
+    -- Эффект при наведении
+    actionButton.MouseEnter:Connect(function()
+        actionButton.BackgroundColor3 = Color3.fromRGB(80, 100, 200)
     end)
     
-    return itemFrame, statusLabel
+    actionButton.MouseLeave:Connect(function()
+        actionButton.BackgroundColor3 = Color3.fromRGB(60, 80, 160)
+    end)
+    
+    actionButton.MouseButton1Click:Connect(function()
+        -- Легальный способ: создание отчета
+        StarterGui:SetCore("SendNotification", {
+            Title = "GGH Report",
+            Text = "Отчет создан для: " .. player.Name,
+            Duration = 3,
+            Icon = "rbxassetid://4483345998"
+        })
+    end)
+    
+    return itemFrame, statusLabel, avatar
 end
 
 -- Основная функция мониторинга
 local function startMonitoring()
-    local playerLastPositions = {}
     local suspectCount = 0
-    
-    -- Инициализация списка игроков
     local playerItems = {}
     local playerStatusLabels = {}
+    local playerAvatars = {}
     
     local function updatePlayerList()
         local players = Players:GetPlayers()
         local yOffset = 0
         
-        -- Обновляем статистику
-        TotalPlayersLabel.Text = "Игроков онлайн: " .. #players
+        TotalPlayersLabel.Text = "🎮 Игроков онлайн: " .. #players
         
-        -- Очищаем список
         for _, item in pairs(playerItems) do
             item:Destroy()
         end
+        
         playerItems = {}
         playerStatusLabels = {}
+        playerAvatars = {}
         
-        -- Создаем новые элементы
         for i, player in ipairs(players) do
             if player ~= LocalPlayer then
-                local item, statusLabel = createPlayerListItem(player, i)
+                local item, statusLabel, avatar = createPlayerListItem(player, i)
                 item.Parent = PlayersScrollingFrame
                 playerItems[player] = item
                 playerStatusLabels[player] = statusLabel
-                yOffset = yOffset + 65
+                playerAvatars[player] = avatar
+                yOffset = yOffset + 75
             end
         end
         
         PlayersScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, yOffset)
     end
     
-    -- Обновляем список при подключении/отключении игроков
     Players.PlayerAdded:Connect(updatePlayerList)
     Players.PlayerRemoving:Connect(updatePlayerList)
     updatePlayerList()
     
-    -- Основной цикл мониторинга
+    -- Мониторинг в реальном времени
     RunService.Heartbeat:Connect(function()
         suspectCount = 0
         
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= LocalPlayer then
-                -- Проверяем все виды чита
                 local speedCheck = checkUnrealisticSpeed(player)
                 local flyCheck = checkIllegalFlying(player)
-                local lastPos = playerLastPositions[player]
-                local currentPos, teleportCheck = checkTeleportation(player, lastPos)
-                local noclipCheck = checkNoclip(player)
+                local teleportCheck = checkTeleportation(player)
                 
-                playerLastPositions[player] = currentPos
-                
-                -- Обновляем статус в GUI
                 local statusLabel = playerStatusLabels[player]
+                
                 if statusLabel then
                     if speedCheck.isCheating then
-                        statusLabel.Text = "⚠️ Нереальная скорость"
+                        statusLabel.Text = "⚡ СКОРОСТНОЙ ЧИТ"
                         statusLabel.TextColor3 = Color3.fromRGB(255, 150, 50)
                         suspectCount = suspectCount + 1
                     elseif flyCheck.isCheating then
-                        statusLabel.Text = "⚠️ Незаконный полет"
+                        statusLabel.Text = "🕊️ ЛЕТАЮЩИЙ ЧИТ"
                         statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
                         suspectCount = suspectCount + 1
                     elseif teleportCheck.isCheating then
-                        statusLabel.Text = "⚠️ Телепортация"
+                        statusLabel.Text = "🌀 ТЕЛЕПОРТ ЧИТ"
                         statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
                         suspectCount = suspectCount + 1
-                    elseif noclipCheck.isCheating then
-                        statusLabel.Text = "⚠️ Noclip"
-                        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 150)
-                        suspectCount = suspectCount + 1
                     else
-                        statusLabel.Text = "✅ Легальный игрок"
+                        statusLabel.Text = "✅ ЛЕГИТ ИГРОК"
                         statusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
                     end
                 end
             end
         end
         
-        -- Обновляем счетчик подозрительных
-        SuspectsLabel.Text = "Подозрительных: " .. suspectCount
+        SuspectsLabel.Text = "⚠️ Подозрительных: " .. suspectCount
+        
+        -- Мигание при обнаружении чита
+        if suspectCount > 0 then
+            Title.Text = "🔴 GGH ANTI-CHEAT [" .. suspectCount .. "]"
+            Title.TextColor3 = Color3.fromRGB(255, 100, 100)
+        else
+            Title.Text = "🔒 GGH ANTI-CHEAT SYSTEM"
+            Title.TextColor3 = Color3.new(1, 1, 1)
+        end
     end)
     
-    -- Кнопка "Обновить список"
+    -- Кнопка обновления
     local RefreshButton = Instance.new("TextButton")
-    RefreshButton.Text = "🔄 Обновить список"
-    RefreshButton.Size = UDim2.new(0.9, 0, 0, 40)
-    RefreshButton.Position = UDim2.new(0.05, 0, 0.85, 0)
-    RefreshButton.BackgroundColor3 = Color3.fromRGB(50, 100, 180)
+    RefreshButton.Text = "🔄 ОБНОВИТЬ ДАННЫЕ"
+    RefreshButton.Size = UDim2.new(0.9, 0, 0, 50)
+    RefreshButton.Position = UDim2.new(0.05, 0, 0.9, 0)
+    RefreshButton.BackgroundColor3 = Color3.fromRGB(60, 90, 180)
     RefreshButton.TextColor3 = Color3.new(1, 1, 1)
-    RefreshButton.Font = Enum.Font.GothamBold
+    RefreshButton.Font = Enum.Font.GothamBlack
     RefreshButton.TextSize = 16
+    RefreshButton.ZIndex = 101
     RefreshButton.Parent = MainFrame
     
     local refreshCorner = Instance.new("UICorner")
-    refreshCorner.CornerRadius = UDim.new(0, 10)
+    refreshCorner.CornerRadius = UDim.new(0, 12)
     refreshCorner.Parent = RefreshButton
     
     RefreshButton.MouseButton1Click:Connect(updatePlayerList)
     
-    -- Информационная панель
+    -- Инфо панель
     local InfoLabel = Instance.new("TextLabel")
-    InfoLabel.Text = "ℹ️ Система только обнаруживает. Используйте официальные жалобы Roblox."
-    InfoLabel.Size = UDim2.new(0.9, 0, 0, 40)
-    InfoLabel.Position = UDim2.new(0.05, 0, 0.92, 0)
+    InfoLabel.Text = "📌 GGH Anti-Cheat v2.0 | GUI Surface Layer | Легальная система анализа"
+    InfoLabel.Size = UDim2.new(0.9, 0, 0, 25)
+    InfoLabel.Position = UDim2.new(0.05, 0, 0.97, 0)
     InfoLabel.BackgroundTransparency = 1
-    InfoLabel.TextColor3 = Color3.fromRGB(150, 150, 200)
+    InfoLabel.TextColor3 = Color3.fromRGB(150, 170, 220)
     InfoLabel.Font = Enum.Font.Gotham
-    InfoLabel.TextSize = 12
+    InfoLabel.TextSize = 11
     InfoLabel.TextWrapped = true
+    InfoLabel.ZIndex = 101
     InfoLabel.Parent = MainFrame
+    
+    -- Анимация загрузки
+    local loadingText = Instance.new("TextLabel")
+    loadingText.Text = "GGH Anti-Cheat активирован..."
+    loadingText.Size = UDim2.new(1, 0, 0, 30)
+    loadingText.Position = UDim2.new(0, 0, 1.05, 0)
+    loadingText.BackgroundTransparency = 1
+    loadingText.TextColor3 = Color3.fromRGB(100, 255, 100)
+    loadingText.Font = Enum.Font.GothamBold
+    loadingText.TextSize = 14
+    loadingText.ZIndex = 101
+    loadingText.Parent = MainFrame
+    
+    task.spawn(function()
+        for i = 1, 10 do
+            loadingText.Text = "GGH Anti-Cheat активирован" .. string.rep(".", i % 4)
+            task.wait(0.3)
+        end
+        loadingText.Visible = false
+    end)
 end
 
--- Запускаем систему
+-- Запуск системы
 startMonitoring()
 
--- Анимация появления
-MainFrame.Visible = true
-task.wait(0.1)
-MainFrame.Visible = false
+-- Горячие клавиши помощи
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.H then
+        StarterGui:SetCore("SendNotification", {
+            Title = "GGH Помощь",
+            Text = "K - Меню | ESC - Закрыть | H - Помощь",
+            Duration = 5,
+            Icon = "rbxassetid://4483345998"
+        })
+    end
+end)
 
-print("GGH Anti-Cheat System загружен. Нажмите K для открытия меню.")
+print("🚀 GGH Anti-Cheat System загружен!")
+print("🎯 Нажмите K для открытия меню")
+print("🔝 GUI на самом верхнем слое")
